@@ -1,10 +1,33 @@
 # Paolo Lanaro
 import time
+import json
+import os
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 
-URL = 'https://azenta.wd1.myworkdayjobs.com/Azenta_External_Site/login?redirect=%2FAzenta_External_Site%2Fjob%2FBillerica%2FHardware-Engineering-Co-Op---May-Dec_R20240891-1%2Fapply'
+# Login URL:
+# URL = 'https://azenta.wd1.myworkdayjobs.com/Azenta_External_Site/login?redirect=%2FAzenta_External_Site%2Fjob%2FBillerica%2FHardware-Engineering-Co-Op---May-Dec_R20240891-1%2Fapply'
+# Application URL:
+URL = 'https://jobs.lever.co/analyticpartners/ee9ec916-0a8c-4550-b80d-afdcf702ed4b'
+user_json = 'user.json'
+
+def check_user_loaded_data():
+    if not os.path.exists(user_json):
+        return False
+
+    with open(user_json, 'r') as f:
+        global data
+        data = json.load(f)
+
+    # Rough version of 'make sure we have data'
+    assert data['email']
+    assert data['first_name']
+    assert data['last_name']
+    assert data['phone']
+    assert data['birthdate']
+    assert data['address']
+    assert data['path_to_resume']
 
 def basic_example(URL, title):
     # Create the webdriver on Firefox
@@ -14,15 +37,42 @@ def basic_example(URL, title):
     # Assert some title string is in the driver's title
     assert title in driver.title
 
+def find_attribute(element, search_tag, expected_tag, case_sensitive = False):
+    try:
+        value = element.get_attribute(search_tag)
+        if (case_sensitive and value == expected_tag) or (not case_sensitive and value.lower() == expected_tag.lower()):
+            return True
+
+    except:
+        pass
+
+    return False
+
+def find_attributes(element, attributes, expected_tag):
+    return any([find_attribute(element, attribute, expected_tag) for attribute in attributes])
+
 def running_example(URL, title):
     driver = webdriver.Firefox()
     driver.get(URL)
     assert title in driver.title
+    time.sleep(2)
+
+    class_names = ['postings-btn-wrapper']
+    css_tags = ['input', 'button']
+    # for tag in tags
+    inputs = driver.find_elements(By.CSS_SELECTOR, 'input')
+    for input in inputs:
+
+        if find_attributes(input, ['data-automation-id', 'autocomplete'], 'email'):
+            # we have an email form!
+            print('email form detected')
+            input.send_keys(data['email'])
+            breakpoint()
+        # if find_attributes(input, []
 
     # Get elements, make a list of useful elements, navigate to elements that are useful click buttons
     breakpoint()
 
-    time.sleep(5)
     elements = driver.find_elements()
     print(elements)
 
@@ -35,8 +85,12 @@ def running_example(URL, title):
     elem.send_keys(Keys.RETURN)
 
 if __name__ == '__main__':
+    # Check whether we have data for user information
+    check_user_loaded_data()
     # basic_example('https://duckduckgo.com', 'Duck')
-    running_example(URL, 'Workday')
+    title = 'Workday'
+    title = 'Analytic'
+    running_example(URL, title)
 
 
 
